@@ -16,7 +16,6 @@ output:
 
 ```{r load and analyse data, include = FALSE}
 library(readr) # for reading in csv files 
-library(haven) # for SPSS data
 library(dplyr) # for wrangling data
 library(here)  # for simplifying file paths
 library(tidyverse) # for making everything tidy
@@ -28,7 +27,7 @@ library(Hmisc)
 knitr::opts_chunk$set(echo = FALSE, message=FALSE)
 
 ## Wrangle 2018 data
-Data_2018 <- read_sav(here( "2018_data.sav")) # Read in Qualtrics file saved as SPSS .sav file
+Data_2018 <- readRDS(here( "Data_2018.rds")) # Read in Qualtrics file saved as SPSS .sav file
 level_key_yes_no <- c("1" = "Yes", "0" = "No")
 Data_2018$completed_FT <- as_factor(Data_2018$completed_FT)
 Data_2018$completed_PVT <- as_factor(Data_2018$completed_PVT)
@@ -86,7 +85,7 @@ tab_survey <- CreateTableOne(data=Descriptive_subset_survey_2018, strata= "compl
 
 as.data.frame(b)
 
-Data_2019 <- read_sav(here( "2019_data.sav")) 
+Data_2019 <- readRDS(here( "Data_2019.rds")) 
 
 Data_2019$completed_FT <- !is.na(Data_2019$FTT_groupid)
 Data_2019$completed_PVT <- !is.na(Data_2019$PVT_groupid)
