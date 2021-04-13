@@ -1,0 +1,675 @@
+---
+title: "Running studies online"
+subtitle: "Tips, tools and lessons learnt"
+author: "Deborah Apthorp"
+institute: "University of New England, NSW"
+date: "`r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    css: [default, rladies, rladies-fonts]
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r load and analyse data, include = FALSE}
+library(readr) # for reading in csv files 
+library(dplyr) # for wrangling data
+library(here)  # for simplifying file paths
+library(tidyverse) # for making everything tidy
+library(mosaic)
+library(tableone)
+library(forcats)
+library(corrplot)
+library(Hmisc)
+knitr::opts_chunk$set(echo = FALSE, message=FALSE)
+
+## Wrangle 2018 data
+Data_2018 <- readRDS(here( "Data_2018.rds")) # Read in Qualtrics file saved as SPSS .sav file
+level_key_yes_no <- c("1" = "Yes", "0" = "No")
+Data_2018$completed_FT <- as_factor(Data_2018$completed_FT)
+Data_2018$completed_PVT <- as_factor(Data_2018$completed_PVT)
+Data_2018$completed_TS <- as_factor(Data_2018$completed_TS)
+Data_2018$completed_Nback <- as_factor(Data_2018$completed_Nback)
+Data_2018$completed_FT <-recode(Data_2018$completed_FT, !!!level_key_yes_no)
+Data_2018$completed_PVT <- recode(Data_2018$completed_PVT, !!!level_key_yes_no)
+Data_2018$completed_TS <- recode(Data_2018$completed_TS, !!!level_key_yes_no)
+Data_2018$completed_Nback <- recode(Data_2018$completed_Nback, !!!level_key_yes_no)
+
+Data_2018$computerplatform[Data_2018$computerplatform == ""] <- "unknown" 
+
+Descriptive_subset_sample_2018<-Data_2018 %>%
+  select(Age, Gender, completed_FT, completed_PVT, completed_TS, completed_Nback)
+Descriptive_subset_sample_2018$Gender <- as_factor(Descriptive_subset_sample_2018$Gender)
+
+level_key_gender <- c("1" = "Female", "2" = "Male", "3" = "Other")
+Descriptive_subset_sample_2018$Gender <-recode(Descriptive_subset_sample_2018$Gender, !!!level_key_gender)
+
+Descriptive_subset_survey_2018<-Data_2018 %>%
+ select(completed_FT, AQ10_score, ME_score, AUDIT_ALC, DASS_Depression, DASS_Anxiety, DASS_Stress, PSQI_Global, Dream_recall)
+
+SurveyVars<-c("AQ10_score", "ME_score", "AUDIT_ALC","DASS_Depression", "DASS_Anxiety",  "DASS_Stress", "PSQI_Global", "Dream_recall")
+
+b <-print(CreateTableOne(vars=SurveyVars, strata= "completed_FT", data=Descriptive_subset_survey_2018))
+
+Descriptive_subset_behavioural_2018<-Data_2018 %>%
+ select(computerplatform, PVT_meanRT500, TS_RT_SwitchCost, nBack_dprime, FT_score_dominant, FT_score_nondominant)
+
+Descriptive_subset_behavioural_2018 <- filter(Descriptive_subset_behavioural_2018, Descriptive_subset_behavioural_2018$computerplatform !='unknown') # filter out unknown computer platforms
+
+BehaviouralVars<-c("PVT_meanRT500", "TS_RT_SwitchCost", "nBack_dprime", "FT_score_dominant", "FT_score_nondominant")
+
+# Make list of the variable labels you want to use for each variable
+var_label_list <- list(PVT_meanRT500 = "PVT reaction time", 
+                       TS_RT_SwitchCost = "Task Switching RT cost",
+                       nBack_dprime = "n-Back d prime",
+                       FT_score_dominant = "FTT score (dom)",
+                       FT_score_nondominant = "FTT score (non-dom)")
+
+#attach/assign the labels to the variables in the data
+labelled::var_label(Descriptive_subset_behavioural_2018) <- var_label_list
+
+c <-print(CreateTableOne(vars=BehaviouralVars, strata= "computerplatform", data=Descriptive_subset_behavioural_2018), varLabels = TRUE)
+
+as.data.frame(c)
+
+tab_sample <- CreateTableOne(data=Descriptive_subset_sample_2018)
+
+a <- print(tab_sample, quote = FALSE, noSpaces = TRUE)
+
+as.data.frame(a)
+
+tab_survey <- CreateTableOne(data=Descriptive_subset_survey_2018, strata= "completed_FT")
+
+as.data.frame(b)
+
+Data_2019 <- readRDS(here( "Data_2019.rds")) 
+
+Data_2019$completed_FT <- !is.na(Data_2019$FTT_groupid)
+Data_2019$completed_PVT <- !is.na(Data_2019$PVT_groupid)
+Data_2019$completed_IGT <- !is.na(Data_2019$IGT_groupnumber)
+
+Data_2019$FTT_computer.platform[Data_2019$FTT_computer.platform == ""] <- "unknown" 
+Data_2019$PVT_computer.platform[Data_2019$PVT_computer.platform == ""] <- "unknown"
+Data_2019$computer.platform[Data_2019$computer.platform == ""] <- "unknown" 
+
+Descriptive_subset_sample_2019<-Data_2019 %>%
+  select(Age, Gender, completed_FT, completed_PVT, completed_IGT)
+Descriptive_subset_sample_2019$Gender <- as_factor(Descriptive_subset_sample_2019$Gender)
+
+Descriptive_subset_sample_2019$Gender <- recode(Descriptive_subset_sample_2019$Gender, !!!level_key_gender)
+
+Descriptive_subset_survey_2019<-Data_2019 %>%
+ select(completed_FT, AQ_total, ME_score, AUDIT_ALC, DASS_Depression, DASS_Anxiety, DASS_Stress, PSQI_Global)
+
+SurveyVars_2019<-c("AQ_total", "ME_score", "AUDIT_ALC","DASS_Depression", "DASS_Anxiety",  "DASS_Stress", "PSQI_Global")
+
+b_2019 <-print(CreateTableOne(vars=SurveyVars_2019, strata= "completed_FT", data=Descriptive_subset_survey_2019))
+
+as.data.frame(b_2019)
+
+Descriptive_subset_behavioural_2019<-Data_2019 %>%
+ select(computer.platform, PVT_meanRT500, IGT_expressions.NET, FTT_score_dominant, FTT_score_nondominant)
+
+Descriptive_subset_behavioural_2019 <- filter(Descriptive_subset_behavioural_2019, Descriptive_subset_behavioural_2019$computer.platform !='unknown') # filter out unknown computer platforms
+
+BehaviouralVars_2019<-c("PVT_meanRT500", "FTT_score_dominant", "FTT_score_nondominant", "IGT_expressions.NET")
+
+# Make list of the variable labels you want to use for each variable
+var_label_list_2019 <- list(PVT_meanRT500 = "PVT reaction time",
+                       IGT_expressions.NET = "IGT net score",
+                       FTT_score_dominant = "FTT score (dom)",
+                       FTT_score_nondominant = "FTT score (non-dom)")
+
+#attach/assign the labels to the variables in the data
+labelled::var_label(Descriptive_subset_behavioural_2019) <- var_label_list_2019
+
+f <-print(CreateTableOne(vars=BehaviouralVars_2019, strata= "computer.platform", data=Descriptive_subset_behavioural_2019), varLabels = TRUE)
+
+as.data.frame(f)
+
+tab_sample_2019 <- CreateTableOne(data=Descriptive_subset_sample_2019)
+
+a_2019 <- print(tab_sample_2019, quote = FALSE, noSpaces = TRUE)
+
+as.data.frame(a_2019)
+
+
+```
+
+
+background-image: url(https://media.giphy.com/media/26gs78HRO8sOuhTkQ/giphy.gif)
+background-size: contain
+class: center, middle, inverse
+
+# Moving to an online university
+## UNE 2018
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+```
+
+???
+
+Image credit: [Schitt's Creek](https://www.poptv.com/schittscreek)
+
+---
+class: center, middle
+
+# Running studies online
+
+### Stage 1 (2018)
+
+---
+class: inverse, center, middle
+background-image: url(https://media.giphy.com/media/1msv9p84BukVq63l4R/giphy.gif)
+background-size: contain
+# Getting Started
+
+---
+
+# Structure of the projects
+
+I worked with group projects from 2018-2020
+
+--
+
+5-10 students per group - group data collection, individual questions
+
+--
+
+- Allowed for the possibility of collecting more data than I'd ever had in one place!
+
+--
+
+- Catch - all data collection had to be online
+
+--
+
+- Plan: Combine survey data with online behavioural experiments
+
+--
+
+- Overall theme: Sleep, Memory and Attention
+
+--
+
+- Individual questions (examples): 
+
+--
+
+  - Do people with higher visual working memory remember their dreams more? 
+
+--
+
+  - Is "chronotype" related to executive function?
+ 
+--
+
+  - Are autism spectrum characteristics related to motor control in the general population?
+
+---
+background-image: url("images/farm.png")
+background-size: cover
+class: center, bottom, inverse
+
+# It's a new world!
+
+---
+
+# Online data collection tools considered
+
+.pull-left[ 
+
+- [Qualtrics](https://www.qualtrics.com/au/)
+  - Good for surveys
+  - Requires licence
+- [Inquisit](https://www.millisecond.com/) 
+  - Designed for online behavioural data collection
+  - Requires licence
+  - Easy to program
+- [Testable](https://www.testable.org/)
+  - Free to use for basic licence
+  - Optional participant pool
+  - Slick interface
+- [PsychoPy](https://www.psychopy.org/)
+  - Free, open source
+  - Good timing
+  - GUI only for online testing
+  - Links to Pavlovia for testing
+  ]
+.pull-right[
+![Qualtrics](images/Qualtrics.png)
+![Inquisit](images/inquisit_v6_logo.png)
+
+![Testable](images/TestableLogo.png)
+
+![PsychoPy](images/psychopyLogo.png)
+]
+---
+
+# What we chose (2018-2019) - Qualtrics & Inquisit
+
+--
+
+- Qualtrics is better for surveys (complex skip logic etc.)
+
+--
+ 
+- Can link through to Inquisit with hyperlink, taking ID code with it
+
+--
+
+- Drawbacks: 
+
+--
+ 
+  - Inquisit requires participants to download a program
+
+--
+
+  - We lost a lot of participants at this point
+ 
+--
+
+  - 2019: lower dropout (warned them better?)
+ 
+--
+
+- Advantages:
+
+--
+
+  - Inquisit has *huge* test library
+
+--
+
+  - Easy to program where necessary
+
+--
+
+  - Relatively good timing due to everything running on Inquisit Player
+
+---
+
+# Measures - survey & behavioural
+--
+
+- Survey measures: 
+
+--
+ 
+  - DASS (Depression, Anxiety, Stress)
+
+--
+
+  - AQ-10 (Autism spectrum characteristics)
+
+--
+ 
+  - MEQ (Morningness-eveningness Questionnaire)
+
+--
+
+  - AUDIT alcohol consumption 
+ 
+--
+
+  - PSQI (Pittsburgh Sleep Quality Inventory)
+ 
+--
+
+- Behavioural Measures:
+
+--
+
+  - Visual N-Back Task (Working memory)
+
+--
+
+  - PVT (Psychomotor Vigilance Task)
+
+--
+
+  - Task-switching (Number-Letter Task)
+  
+--
+
+  - Finger Tapping Task (Motor control)
+
+---
+# Recruitment
+--
+
+- Recruitment was not as easy as you'd think
+
+--
+
+- Probably about the same pace as in-person recruitment
+
+--
+
+- Students who had special populations (shift workers, computer gamers, etc.) struggled to gain enough power 
+
+--
+
+- Having a large group helped (each student was supposed to recruit at least 50 participants)
+
+--
+
+
+- Platforms/sources used: Facebook, Instagram, Twitter, Reddit, workplace emails, first-year Psychology pool (last resort)
+
+
+--
+
+
+- Best recruitment source: Reddit! 
+
+
+--
+
+
+- This year: thinking of using Prolific Academic and paying participants (better quality?)
+
+
+---
+background-image: url("images/River.png")
+background-size: cover
+class: center, middle, inverse
+
+# Results
+
+---
+
+# Sample Characteristics (2018)
+
+
+```{r demographic characteristics}
+knitr::kable(a, format = 'html')
+```
+
+---
+
+# Descriptives (survey variables)
+
+Stratified by whether subjects completed behavioural tasks
+
+```{r survey descriptives}
+
+knitr::kable(b, format = 'html')
+```
+
+---
+# Descriptives (behavioural variables)
+
+Stratified by computer platform
+
+```{r behavioural descriptives}
+
+knitr::kable(c, format = 'html')
+```
+
+---
+class: center, top
+
+# Survey variables correlate with each other
+
+```{r correlations plots, echo = FALSE}
+
+Descriptive_subset_survey_2018_cor <-Data_2018 %>%
+ select(Age, Gender, AQ10_score, ME_score, AUDIT_ALC, DASS_Depression, DASS_Anxiety, DASS_Stress, PSQI_Global, Dream_recall)%>%
+  filter(Gender!=3)
+c <- rcorr(as.matrix(Descriptive_subset_survey_2018_cor))
+#c <- cor(Descriptive_subset_survey_2018_cor, use = "complete.obs", method = "spearman")
+corrplot(as.matrix(c$r), type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45, p.mat = c$P, sig.level = 0.05, insig = "blank")
+```
+---
+class: center, top
+
+# Behavioural variables correlate with each other (a bit)
+
+
+```{r correlate behavioural, echo = FALSE}
+Descriptive_subset_behaviour_2018_cor <-Data_2018 %>%
+ select(Age, Gender, PVT_meanRT500, TS_RT_SwitchCost, nBack_dprime, FT_score_dominant, FT_score_nondominant)%>%
+  filter(Gender!=3)
+d <- rcorr(as.matrix(Descriptive_subset_behaviour_2018_cor))
+#c <- cor(Descriptive_subset_survey_2018_cor, use = "complete.obs", method = "spearman")
+corrplot(as.matrix(d$r), type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45, p.mat = d$P, sig.level = 0.05, insig = "blank")
+```
+
+
+---
+class: center, top
+
+# Survey measures are poor predictors of behaviour
+
+
+```{r correlate behavioural and survey}
+Descriptive_subset_behaviour_survey_2018_cor <-Data_2018 %>%
+ select(Age, Gender, PVT_meanRT500, TS_RT_SwitchCost, nBack_dprime, FT_score_dominant, AQ10_score, ME_score, AUDIT_ALC, DASS_Depression, DASS_Anxiety, DASS_Stress, PSQI_Global, Dream_recall)%>%
+  filter(Gender!=3)
+
+
+e <- rcorr(as.matrix(Descriptive_subset_behaviour_survey_2018_cor))
+#c <- cor(Descriptive_subset_survey_2018_cor, use = "complete.obs", method = "spearman")
+corrplot(as.matrix(e$r), type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45, p.mat = e$P, sig.level = 0.05, insig = "blank")
+```
+
+---
+# Findings of individual projects 
+
+--
+
+- **Dream recall** significantly predicted **working memory performance** on the N-back working memory task (after controlling for age and gender), but sleep quality did not
+
+--
+
+- **Sleep quality** did NOT predict performance on the **PVT** (after controlling for age and gender)
+
+--
+
+- **Autism spectrum characteristics** predicted **finger tapping** performance, and interacted with **age** (stronger association in younger participants) - Alycia Messing's talk yesterday
+
+--
+
+- **Chronotype** (morningness-eveningness) did NOT predict performance on **task switching** (and neither did sleep quality)
+
+--
+
+- **Alcohol use** did NOT moderate the relationship between **anxiety** and **sleep quality**
+
+--
+
+- **Shift work** did NOT affect **sleep quality** or **depression** (but underpowered)
+
+---
+background-image: url("images/island.png")
+background-size: cover
+class: center, bottom, inverse
+
+# Running studies online
+
+### Stage 2 (2019)
+
+---
+
+# Measures - survey & behavioural (2019)
+--
+
+- Survey measures: 
+
+--
+ 
+  - DASS (Depression, Anxiety, Stress)
+
+--
+
+  - **AQ-50** (Autism spectrum characteristics)
+
+--
+ 
+  - MEQ (Morningness-eveningness Questionnaire)
+
+--
+
+  - AUDIT alcohol consumption 
+ 
+--
+
+  - PSQI (Pittsburgh Sleep Quality Inventory)
+ 
+--
+
+- Behavioural Measures:
+
+
+--
+
+  - PVT (Psychomotor Vigilance Task)
+
+--
+
+  - **Iowa Gambling Task (Decision-making)**
+  
+--
+
+  - Finger Tapping Task (Motor control)
+
+
+---
+
+# Sample Characteristics (2019)
+
+
+```{r sample descriptives 2019}
+
+knitr::kable(a_2019, format = 'html')
+```
+
+---
+
+# Descriptives (survey variables) - 2019 sample 
+
+Stratified by whether subjects completed behavioural tasks
+
+```{r survey descriptives 2019}
+
+knitr::kable(b_2019, format = 'html')
+```
+
+---
+
+# Descriptives (behavioural variables) - 2019 sample 
+
+Stratified by computer platform
+
+```{r behavioural descriptives 2019}
+
+knitr::kable(f, format = 'html')
+```
+
+
+---
+class: center, top
+
+## Survey variables correlate with each other (as before)
+```{r correlations plots 2019, echo = FALSE}
+
+Descriptive_subset_survey_2019_cor <-Data_2019 %>%
+ select(Age, Gender, AQ_total, ME_score, AUDIT_ALC, DASS_Depression, DASS_Anxiety, DASS_Stress, PSQI_Global)%>%
+  filter(Gender!=3)
+cor_survey_2019 <- rcorr(as.matrix(Descriptive_subset_survey_2019_cor))
+#c <- cor(Descriptive_subset_survey_2018_cor, use = "complete.obs", method = "spearman")
+corrplot(as.matrix(cor_survey_2019$r), type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45, p.mat = cor_survey_2019$P, sig.level = 0.05, insig = "blank")
+```
+
+---
+class: center, top
+
+## Behavioural variables correlate with each other (a bit more)
+
+
+```{r correlate behavioural 2019, echo = FALSE}
+Descriptive_subset_behaviour_2019_cor <-Data_2019 %>%
+ select(Age, Gender, PVT_meanRT500, FTT_score_dominant, FTT_score_nondominant, IGT_expressions.NET)%>%
+  filter(Gender!=3)
+cor_behaviour_2019 <- rcorr(as.matrix(Descriptive_subset_behaviour_2019_cor))
+#c <- cor(Descriptive_subset_survey_2018_cor, use = "complete.obs", method = "spearman")
+corrplot(as.matrix(cor_behaviour_2019$r), type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45, p.mat = cor_behaviour_2019$P, sig.level = 0.05, insig = "blank")
+```
+
+
+---
+class: center, top
+
+## Survey measures are (again) poor predictors of behaviour
+
+```{r correlate behavioural and survey 2019, fig.align='center', dpi = 80}
+Descriptive_subset_behaviour_survey_2019_cor <-Data_2019 %>%
+ select(Age, Gender, PVT_meanRT500, PVT_meanRT500, FTT_score_dominant, IGT_expressions.NET, AQ_total, ME_score, AUDIT_ALC, DASS_Depression, DASS_Anxiety, DASS_Stress, PSQI_Global)%>%
+  filter(Gender!=3)
+cor_survey_behaviour_2019 <- rcorr(as.matrix(Descriptive_subset_behaviour_survey_2019_cor))
+#c <- cor(Descriptive_subset_survey_2018_cor, use = "complete.obs", method = "spearman")
+
+corrplot(as.matrix(cor_survey_behaviour_2019$r), type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45, p.mat = cor_survey_behaviour_2019$P, sig.level = 0.05, insig = "blank")
+```
+
+---
+# Take home messages
+
+--
+
+- Are survey measures measuring what we think they are measuring? (Sleep quality? Alcohol use? Mood? Chronontype? Autism-spectrum characteristics?)
+
+--
+
+- Is response style driving the correlations between survey measures? 
+
+--
+
+  - E.g. are some subjects more likely to choose the extremes of scales? 
+
+--
+
+- Are behavioural measures measuring what we think they are measuring? (Vigilance? Working memory capacity? Motor control? Executive functioning?)
+
+--
+
+
+- We tend to think of these as more objective, but are they? Or is it all just reaction time? (And what is that measuring?)
+
+--
+
+
+- Also need to think more about how to recruit representative samples and motivate participants
+
+--
+
+
+- I would welcome feedback and thoughts! 
+
+---
+
+background-image: url("images/RainbowCloud2.png")
+background-size: cover
+class: center, middle, inverse
+
+# Thanks!
+
+Thanks so much to all my students from UNE 
+
+Slides created via the R package [**xaringan**](https://github.com/yihui/xaringan).
+
+The chakra comes from [remark.js](https://remarkjs.com), [**knitr**](https://yihui.org/knitr), and [R Markdown](https://rmarkdown.rstudio.com).
+
+Talk (+ data & code) will be available on my website shortly
